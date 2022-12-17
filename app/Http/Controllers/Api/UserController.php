@@ -19,24 +19,26 @@ class UserController extends Controller
         $user = User::find($id);
         if($user != null) {
             if($uid == $id) {
+                $user->isAuth = true;
                 return new ApiResource(200, 'Berhasil mengambil data', $user);
             } else {
                 $user->email = null;
                 $user->email_verified_at = null;
-                $user->password = null;
                 $user->remember_token = null;
-                $user->created_at = null;
                 $user->updated_at = null;
+                $user->isAuth = false;
                 return new ApiResource(200, 'Berhasil mengambil data', $user);
             }
         } else {
             return new ApiResource(404, 'User tidak ditemukan', null);
         }
     }
-
-    public function getCurrentLoggedInUser(Request $request) {
-        $user = User::find(Auth::id());
+    public function find(Request $request){
+        $user = User::where('username', 'LIKE', '%'. $request->username .'%')->get();
         return new ApiResource(200, 'Berhasil mengambil data', $user);
+    }
+    public function getCurrentLoggedInUser(Request $request) {
+        return $this->show($request, Auth::id());
     }
 
     public function edit(Request $request) {

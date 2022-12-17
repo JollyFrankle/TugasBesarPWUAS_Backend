@@ -7,10 +7,11 @@ use Illuminate\Http\Request;
 
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Resources\ApiResource;
-use Illuminate\Auth\Events\Registered;
+
+use App\Mail\RegisMail;
+use Illuminate\Support\Facades\Mail;
 // use Carbon\Carbon;
 
 class AuthController extends Controller
@@ -35,7 +36,14 @@ class AuthController extends Controller
             'password' => bcrypt($request->password),
         ]);
 
-        
+        $user->save();
+        try {
+            Mail::to($user->email)->send(new RegisMail($user->id, $user->name));
+
+            return new ApiResource(200, 'User berhasil mendaftar, cek email untuk verifikasi!', $user);
+        } catch (\Exception $e) {
+            return new ApiResource(500, 'User berhasil dibuat, namun email gagal dikirim!', $e->getMessage());
+        }
         if($user->save()) {
             // event(new Registered($user));
 
@@ -56,6 +64,9 @@ class AuthController extends Controller
         }
         
         if($user != null) {
+            if($user->email_verified_at == null) {
+                return new ApiResource(401, 'Unauthorized', "Email belum diverifikasi");
+            }
             $token = $user->createToken('auth_token')->accessToken;
         
             return new ApiResource(200, 'Login berhasil', [
@@ -72,5 +83,24 @@ class AuthController extends Controller
         $user = Auth::user();
         $user->tokens()->delete();
         return new ApiResource(200, 'Logout berhasil', null);
+    }
+
+    public function verify_email(Request $request, $token) {
+        $tokenData = \App\Models\VerifToken::where('token', $token)->first();
+        if($tokenData == null) {
+            return new ApiResource(404, 'Token tidak ditemukan', null);
+        }
+
+        $user = User::find($tokenData->user_id);
+        if($user == null) {
+            return new ApiResource(404, 'User tidak ditemukan', null);
+        }
+
+        $user->email_verified_at = now();
+        $user->save();
+
+        $tokenData->delete();
+
+        return new ApiResource(200, 'Email berhasil diverifikasi', null);
     }
 }

@@ -10,12 +10,22 @@ use Illuminate\Support\Facades\Validator;
 
 use App\Models\Marketplace;
 use App\Http\Resources\ApiResource;
+use Illuminate\Support\Facades\File;
 
 class MarketplaceController extends Controller
 {
     public function index(Request $request) {
-        $marketplaces = Marketplace::orderBy('created_at', 'desc')->get();
+        $marketplaces = Marketplace::with(['user'])->orderBy('created_at', 'desc')->get();
         return new ApiResource(200, 'Berhasil mengambil data', $marketplaces);
+    }
+
+    public function getMarketplaceByUserId(Request $request, $id_user) {
+        $marketplaces = Marketplace::with(['user'])->where('id_user', $id_user)->orderBy('created_at', 'desc')->get();
+        return new ApiResource(200, 'Berhasil mengambil data', $marketplaces);
+    }
+
+    public function getCurrentLoggedInUserMarketplace(Request $request) {
+        return $this->getMarketplaceByUserId($request, Auth::id());
     }
 
     public function show(Request $request, $id) {
@@ -31,7 +41,7 @@ class MarketplaceController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string',
             'description' => 'required|string',
-            'image' => 'required|string',
+            'image' => 'required|image|mimes:jpeg,png,jpg|max:2048',
             'price' => 'required|integer',
         ]);
 
@@ -39,11 +49,19 @@ class MarketplaceController extends Controller
             return new ApiResource(422, 'Validasi gagal', $validator->errors());
         }
 
+        $image = null;
+        $folder = 'images/marketplace';
+        // if($request->hasFile('image')) {
+            $image = $request->file('image')->store($folder, 'public');
+            // get image name only
+            $image = basename($image);
+        // }
+
         $marketplace = new Marketplace([
             'id_user' => Auth::id(),
             'name' => $request->name,
             'description' => $request->description,
-            'image' => $request->image,
+            'image' => $image,
             'price' => $request->price,
         ]);
         $marketplace->save();
@@ -70,6 +88,18 @@ class MarketplaceController extends Controller
             $marketplace->price = $request->price;
             $marketplace->save();
             return new ApiResource(200, 'Berhasil mengubah marketplace', $marketplace);
+        } else {
+            return new ApiResource(404, 'Marketplace tidak ditemukan', null);
+        }
+    }
+
+    public function destroy(Request $request, $id) {
+        $marketplace = Marketplace::find($id);
+        if($marketplace != null) {
+            if($marketplace->delete()) {
+                File::delete(public_path('storage/images/marketplace/'.$marketplace->image));
+            }
+            return new ApiResource(200, 'Berhasil menghapus marketplace', $marketplace);
         } else {
             return new ApiResource(404, 'Marketplace tidak ditemukan', null);
         }

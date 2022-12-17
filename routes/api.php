@@ -56,4 +56,14 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::get('user', 'Api\UserController@getCurrentLoggedInUser');
     Route::put('user', 'Api\UserController@edit');
     Route::delete('user', 'Api\UserController@delete');
+    Route::post('user/find', 'Api\UserController@find');
+
+    // Marketplace
+    Route::get('marketplace/all', 'Api\MarketplaceController@index');
+    Route::get('marketplace/user/{id}', 'Api\MarketplaceController@getMarketplaceByUserId');
+    Route::get('marketplace/user', 'Api\MarketplaceController@getCurrentLoggedInUserMarketplace');
+    Route::get('marketplace/{id}', 'Api\MarketplaceController@show');
+    Route::post('marketplace', 'Api\MarketplaceController@store');
+    Route::put('marketplace/{id}', 'Api\MarketplaceController@update');
+    Route::delete('marketplace/{id}', 'Api\MarketplaceController@destroy');
 });

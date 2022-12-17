@@ -23,7 +23,7 @@ class PostController extends Controller
     {
         $user = User::find(Auth::id());
         // get post by followings in chronological order, check if it has been liked by the user, and get total likes and comments
-        $posts = Post::with(['user'])->whereIn('id_user', $user->followings()->pluck('id_target'))->orderBy('created_at', 'desc')->limit(10)->get()->map(function($post) {
+        $posts = Post::with(['user'])->whereIn('id_user', $user->followings()->pluck('id_target'))->orderBy('created_at', 'desc')->limit(15)->get()->map(function($post) {
             $post->liked = $post->likes()->where('id_user', Auth::id())->first() != null;
             $post->is_owner = $post->id_user == Auth::id();
             $post->total_likes = $post->likes()->count();
@@ -37,7 +37,7 @@ class PostController extends Controller
     public function explorePost(Request $request)
     {
         // get random post, check if it has been liked by the user, and get total likes and comments
-        $posts = Post::with(['user'])->inRandomOrder()->limit(10)->get()->map(function($post) {
+        $posts = Post::with(['user'])->inRandomOrder()->limit(15)->get()->map(function($post) {
             $post->liked = $post->likes()->where('id_user', Auth::id())->first() != null;
             $post->is_owner = $post->id_user == Auth::id();
             $post->total_likes = $post->likes()->count();
@@ -147,7 +147,6 @@ class PostController extends Controller
                 // unlink image
                 if($post->image != null) {
                     File::delete(public_path('storage/images/posts/'.$post->image));
-                    return new ApiResource(200, 'Post berhasil dihapus', $post);
                 }
                 return new ApiResource(200, 'Post berhasil dihapus', $post);
             } else {

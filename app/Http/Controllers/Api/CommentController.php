@@ -16,7 +16,10 @@ use App\Http\Resources\ApiResource;
 class CommentController extends Controller
 {
     public function getCommentsByPost(Request $request, $id_post) {
-        $comments = Comment::where('id_post', $id_post)->orderBy('created_at', 'desc')->get();
+        $comments = Comment::with(['user'])->where('id_post', $id_post)->orderBy('created_at', 'desc')->get()->map(function($com) {
+            $com->is_owner = $com->id_user == Auth::id();
+            return $com;
+        });
         return new ApiResource(200, 'Berhasil mengambil data', $comments);
     }
 

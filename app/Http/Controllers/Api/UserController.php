@@ -34,7 +34,7 @@ class UserController extends Controller
         }
     }
     public function find(Request $request){
-        $user = User::where('username', 'LIKE', '%'. $request->username .'%')->get();
+        $user = User::where('username', 'LIKE', '%'. $request->username .'%')->orWhere('name', 'LIKE', '%'. $request->username .'%')->limit(10)->get();
         return new ApiResource(200, 'Berhasil mengambil data', $user);
     }
     public function getCurrentLoggedInUser(Request $request) {

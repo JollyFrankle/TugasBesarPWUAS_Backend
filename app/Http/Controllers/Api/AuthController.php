@@ -86,7 +86,7 @@ class AuthController extends Controller
     }
 
     public function verify_email(Request $request, $token) {
-        $tokenData = \App\Models\VerifToken::where('token', $token)->first();
+        $tokenData = \App\Models\VerifToken::where('token', $token)->where('expired_at', '>', now())->first();
         if($tokenData == null) {
             return new ApiResource(404, 'Token tidak ditemukan', null);
         }
